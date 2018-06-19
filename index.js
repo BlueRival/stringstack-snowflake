@@ -59,21 +59,21 @@ class SnowflakeComponent {
 
   }
 
-  getConnection( name, done ) {
+  getConnection( connectionName, done ) {
 
     if ( !this._config ) {
       return done( new Error( 'not initialized' ) );
     }
 
-    if ( this._connectionPool.hasOwnProperty( name ) ) {
-      return done( null, this._connectionPool[ name ] );
+    if ( this._connectionPool.hasOwnProperty( connectionName ) ) {
+      return done( null, this._connectionPool[ connectionName ] );
     }
 
-    if ( !this._config.connections.hasOwnProperty( name ) ) {
+    if ( !this._config.connections.hasOwnProperty( connectionName ) ) {
       return done( new Error( 'connection identifier not found' ) );
     }
 
-    let config = __( defaultConnectionConfig ).mixin( this._config.connections[ name ] );
+    let config = __( defaultConnectionConfig ).mixin( this._config.connections[ connectionName ] );
 
     let missingField = null;
     [
@@ -105,7 +105,7 @@ class SnowflakeComponent {
       },
       ( handle, done ) => {
 
-        this._connectionPool[ name ] = handle;
+        this._connectionPool[ connectionName ] = handle;
 
         done( null, handle );
 
@@ -115,18 +115,16 @@ class SnowflakeComponent {
 
   }
 
-  execute( connection, query, done ) {
+  execute( connectionName, query, done ) {
 
     async.waterfall( [
       ( done ) => {
-        this.getConnection( connection, done );
+        this.getConnection( connectionName, done );
       },
       ( connection, done ) => {
 
-        // clone the query
-        query = JSON.parse( JSON.stringify( query ) );
+        query = this._prepareQuery( query );
 
-        // inject callback
         query.complete = done;
 
         connection.execute( query );
@@ -136,16 +134,45 @@ class SnowflakeComponent {
 
   }
 
-  stream( connection, query, done ) {
+  stream( connectionName, query, done ) {
 
     async.waterfall( [
       ( done ) => {
-        this.getConnection( connection, done );
+        this.getConnection( connectionName, done );
       },
       ( connection, done ) => {
+
+        query = this._prepareQuery( query );
+
+        delete query.streamResult;
+
         done( null, connection.execute( query ).streamRows() );
       }
     ], done );
+
+  }
+
+  _prepareQuery( query ) {
+
+    let temp = query;
+
+    query = {
+      sqlText: temp.sqlText
+    };
+
+    if ( temp.streamResult ) {
+      query.streamResult = !!temp.streamResult;
+    }
+
+    if ( Array.isArray( temp.bind ) ) {
+      query.bind = temp.bind;
+    }
+
+    if ( Array.isArray( temp.fetchAsString ) ) {
+      query.fetchAsString = temp.fetchAsString;
+    }
+
+    return query;
 
   }
 

@@ -1,7 +1,7 @@
 {
   "name": "@stringstack/snowflake",
   "description": "StringStack/snowflake is a component container for snowflake-sdk that allows you to easily include the Snowflake connectivity in your StringStack application.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "repository": {
     "type": "git",
     "url": "git+ssh://git@github.com/BlueRival/stringstack-snowflake.git"
