@@ -28,6 +28,21 @@ class SetupTestConfigComponent {
 
 }
 
-SetupTestConfigComponent.defaultConfig = {};
+SetupTestConfigComponent.restoreDefaultConfig = function () {
+
+  SetupTestConfigComponent.defaultConfig = {
+    connections: {
+      test: {
+        account: process.env.NODE_SNOWFLAKE_ACCOUNT_TESTING || 'account',
+        username: process.env.NODE_SNOWFLAKE_USERNAME_TESTING || 'username',
+        password: process.env.NODE_SNOWFLAKE_PASSWORD_TESTING || 'password',
+        region: process.env.NODE_SNOWFLAKE_REGION_TESTING || 'region'
+      }
+    }
+  };
+
+};
+
+SetupTestConfigComponent.restoreDefaultConfig();
 
 module.exports = SetupTestConfigComponent;
