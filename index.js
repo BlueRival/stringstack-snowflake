@@ -46,7 +46,13 @@ class SnowflakeComponent {
     async.series( [
       ( done ) => {
         async.eachOfSeries( this._connectionPool, ( connection, name, done ) => {
-          connection.destroy( done );
+
+          if ( connection && connection.destroy ) {
+            connection.destroy( done );
+          } else {
+            done();
+          }
+
         }, done );
       },
       ( done ) => {
@@ -59,28 +65,41 @@ class SnowflakeComponent {
 
   }
 
-  getConnection( connectionName, done ) {
+  getConnection( connectionRef, done ) {
 
-    if ( !this._config ) {
-      return done( new Error( 'not initialized' ) );
+    let connectionName = null;
+    let config = null;
+
+    if ( typeof connectionRef === 'string' ) {
+
+      connectionName = connectionRef;
+
+      if ( !this._config ) {
+        return done( new Error( 'not initialized' ) );
+      }
+
+      if ( this._connectionPool.hasOwnProperty( connectionName ) ) {
+        return done( null, this._connectionPool[ connectionName ] );
+      }
+
+      if ( !this._config.connections.hasOwnProperty( connectionName ) ) {
+        return done( new Error( 'connection identifier not found' ) );
+      }
+
+      config = __( defaultConnectionConfig ).mixin( this._config.connections[ connectionName ] );
+
+    } else {
+
+      config = __( defaultConnectionConfig ).mixin( connectionRef );
+      connectionName = JSON.stringify( config ); // allows caching of one-off connections
+
     }
-
-    if ( this._connectionPool.hasOwnProperty( connectionName ) ) {
-      return done( null, this._connectionPool[ connectionName ] );
-    }
-
-    if ( !this._config.connections.hasOwnProperty( connectionName ) ) {
-      return done( new Error( 'connection identifier not found' ) );
-    }
-
-    let config = __( defaultConnectionConfig ).mixin( this._config.connections[ connectionName ] );
 
     let missingField = null;
     [
       'account',
       'username',
-      'password',
-      'region'
+      'password'
     ].forEach( ( field ) => {
 
       if ( missingField ) {
@@ -96,6 +115,18 @@ class SnowflakeComponent {
     if ( missingField ) {
       return done( new Error( 'configuration field ' + missingField + ' must be non-empty string' ) );
     }
+
+    if ( typeof config.region !== 'string' ) {
+      config.region = '';
+    }
+
+    config.region = config.region.trim();
+
+    if ( config.region === '' || config.region === 'us-west-2' ) {
+      delete config.region;
+    }
+
+    // console.log( 'config', config );
 
     let connection = snowflake.createConnection( config );
 
@@ -115,11 +146,11 @@ class SnowflakeComponent {
 
   }
 
-  execute( connectionName, query, done ) {
+  execute( connectionRef, query, done ) {
 
     async.waterfall( [
       ( done ) => {
-        this.getConnection( connectionName, done );
+        this.getConnection( connectionRef, done );
       },
       ( connection, done ) => {
 
@@ -134,11 +165,11 @@ class SnowflakeComponent {
 
   }
 
-  stream( connectionName, query, done ) {
+  stream( connectionRef, query, done ) {
 
     async.waterfall( [
       ( done ) => {
-        this.getConnection( connectionName, done );
+        this.getConnection( connectionRef, done );
       },
       ( connection, done ) => {
 

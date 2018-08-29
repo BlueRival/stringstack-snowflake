@@ -28,11 +28,13 @@ class SetupTestConfigComponent {
 
 }
 
-SetupTestConfigComponent.restoreDefaultConfig = function () {
+SetupTestConfigComponent.restoreDefaultConfig = function ( config ) {
+
+  config = config || null;
 
   SetupTestConfigComponent.defaultConfig = {
     connections: {
-      test: {
+      test: config || {
         account: process.env.NODE_SNOWFLAKE_ACCOUNT_TESTING || 'account',
         username: process.env.NODE_SNOWFLAKE_USERNAME_TESTING || 'username',
         password: process.env.NODE_SNOWFLAKE_PASSWORD_TESTING || 'password',
