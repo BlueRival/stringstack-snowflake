@@ -210,7 +210,8 @@ describe( 'stringstack', function () {
 
         this.timeout( 60000 );
 
-        generateQueryTest( function ( component, done ) {
+        generateQueryTest(
+          function ( component, done ) {
 
             async.waterfall( [
               ( done ) => {
